@@ -57,7 +57,7 @@
 		this._plugins = {};
 
 		/**
-		 * Currently suppressed events to prevent them from beeing retriggered.
+		 * Currently suppressed events to prevent them from being retriggered.
 		 * @protected
 		 */
 		this._supress = {};
@@ -1413,7 +1413,7 @@
 		this.$stage.unwrap();
 		this.$stage.children().contents().unwrap();
 		this.$stage.children().unwrap();
-
+		this.$stage.remove();
 		this.$element
 			.removeClass(this.options.refreshClass)
 			.removeClass(this.options.loadingClass)
@@ -2382,6 +2382,8 @@
 		this.swapping = true;
 		this.previous = undefined;
 		this.next = undefined;
+		this.lastIncoming = '';
+		this.lastOutgoing = '';
 
 		this.handlers = {
 			'change.owl.carousel': $.proxy(function(e) {
@@ -2442,6 +2444,16 @@
 			return;
 		}
 
+		if (incoming.constructor === Array) {
+			incoming = incoming[Math.floor(Math.random() * incoming.length)];
+			this.lastIncoming = incoming;
+		}
+
+		if (outgoing.constructor === Array) {
+			outgoing = outgoing[Math.floor(Math.random() * outgoing.length)];
+			this.lastOutgoing = outgoing;
+		}
+
 		if (outgoing) {
 			left = this.core.coordinates(this.previous) - this.core.coordinates(this.next);
 			previous.one($.support.animation.end, clear)
@@ -2459,10 +2471,23 @@
 
 	Animate.prototype.clear = function(e) {
 		$(e.target).css( { 'left': '' } )
-			.removeClass('animated owl-animated-out owl-animated-in')
-			.removeClass(this.core.settings.animateIn)
-			.removeClass(this.core.settings.animateOut);
+			.removeClass('animated owl-animated-out owl-animated-in');
 		this.core.onTransitionEnd();
+
+		var incoming = this.core.settings.animateIn,
+			outgoing = this.core.settings.animateOut;
+
+		if (incoming.constructor === Array) {
+			$(e.target).removeClass(this.lastIncoming);
+		} else {
+			$(e.target).removeClass(this.core.settings.animateIn);
+		}
+
+		if (outgoing.constructor === Array) {
+			$(e.target).removeClass(this.lastOutgoing);
+		} else {
+			$(e.target).removeClass(this.core.settings.animateOut);
+		}
 	};
 
 	/**
@@ -2893,7 +2918,11 @@
 			this.$element.off(handler, this._handlers[handler]);
 		}
 		for (control in this._controls) {
-			this._controls[control].remove();
+			if(control === '$relative' && settings.navContainer){
+				this._controls[control].html('');
+			}else{
+				this._controls[control].remove();
+			}
 		}
 		for (override in this.overides) {
 			this._core[override] = this._overrides[override];
